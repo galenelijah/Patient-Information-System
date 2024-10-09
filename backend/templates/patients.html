@@ -1,0 +1,6 @@
+<h1>Patients</h1>
+<ul>
+    {% for patient in patients %}
+        <li>{{ patient.first_name }} {{ patient.last_name }} - DOB: {{ patient.date_of_birth }}</li>
+    {% endfor %}
+</ul>
