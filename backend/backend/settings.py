@@ -13,29 +13,21 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 import os
 from pathlib import Path
 
-# If dj_database_url is missing, prevent import error
-try:
-    import dj_database_url
-except ImportError:
-    dj_database_url = None
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-498dgr&0axhv0nepyv(e!zc68lvlotypofaucb%cde(%k0^6&0'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-498dgr&0axhv0nepyv(e!zc68lvlotypofaucb%cde(%k0^6&0')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', '') != 'False'
+
+# Determine if we're running on Heroku
+IS_HEROKU = 'DYNO' in os.environ
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-if 'patient-information-system' in os.environ:
-    ALLOWED_HOSTS.append(f"{os.environ['HEROKU_APP_NAME']}.herokuapp.com")
-
+if IS_HEROKU:
+    ALLOWED_HOSTS.append(os.environ.get('HEROKU_APP_NAME') + '.herokuapp.com')
 
 # Application definition
 
@@ -69,7 +61,7 @@ ROOT_URLCONF = 'backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'frontend' / 'dist'],
+        'DIRS': [os.path.join(BASE_DIR, 'frontend', 'dist')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -84,16 +76,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if IS_HEROKU_APP:
+if IS_HEROKU:
     # In production on Heroku the database configuration is derived from the `DATABASE_URL`
-    # environment variable by the dj-database-url package. `DATABASE_URL` will be set
-    # automatically by Heroku when a database addon is attached to your Heroku app. See:
-    # https://devcenter.heroku.com/articles/provisioning-heroku-postgres#application-config-vars
-    # https://github.com/jazzband/dj-database-url
+    # environment variable by the dj-database-url package.
+    import dj_database_url
     DATABASES = {
         "default": dj_database_url.config(
             env="DATABASE_URL",
@@ -104,7 +93,6 @@ if IS_HEROKU_APP:
     }
 else:
     # When running locally in development or in CI, a sqlite database file will be used instead
-    # to simplify initial setup. Longer term it's recommended to use Postgres locally too.
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -130,32 +118,28 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'dist']
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend', 'dist')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Enable WhiteNoise's GZip compression of static assets.
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-CORS_ALLOW_ALL_ORIGINS = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True  # Only for development, configure properly for production
